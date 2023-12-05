@@ -9,13 +9,13 @@ def get_config():
     # dataset config
     config.csv_path = "/root/autodl-tmp/train.csv"
     config.img_folder = "/root/autodl-tmp/train_thumbnails"
-    config.aug_imgs_folder = "/root/autodl-tmp/train_thumbnails_augs/train_thumbnails_augs"
+    config.aug_imgs_folder = "/root/autodl-tmp/train_thumbnails_rand_augs/train_thumbnails_rand_augs"
     config.img_size = (224, 224)
     config.aug_imgs_num = 4
     config.split = 0.8
     # mode select:
     # use_origin_datasets, use_augs_datasets, use_fuse_datasets
-    config.mode = "use_origin_datasets"
+    config.mode = "use_fuse_datasets"
 
     # dataset transforms config
     config.use_augmixDataset = False
@@ -62,7 +62,7 @@ def get_config():
     config.momentum = 4e-3
 
     #save
-    config.version = "timm_1"
+    config.version = "timm_2"
     config.save_model_name = f"{config.model_name}--{datetime.date.today()}--epoch{config.train_epoches}--ver{config.version}.pt"
     config.logger_name = f"{config.model_name}--{datetime.date.today()}--epoch{config.train_epoches}--ver{config.version}.log"
     return config

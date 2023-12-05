@@ -6,8 +6,12 @@ import os
 import pandas as pd
 from tqdm import tqdm
 from PIL import Image
+import numpy as np
 from tools.label_trans import label_str2int
 from config.model_config import get_config
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
+import cv2
 
 config = get_config()
 
@@ -26,11 +30,14 @@ class UBCDataset_Origin(Dataset):
             label = row["label"]
             img_file_path = os.path.join(self.imgs_path, str(img_id) + '_thumbnail.png')
             if os.path.isfile(img_file_path):
-                img = Image.open(img_file_path).convert('RGB')
-                img = img.resize(img_size)
+                #img = Image.open(img_file_path).convert('RGB')
+                #img = img.resize(img_size)
+                img = cv2.imread(img_file_path)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                img = np.array(img)
                 label_int = label_str2int[f'{label}']
                 if self.transform:
-                    img = self.transform(img)
+                    img = self.transform(image=img)
 
                 self.imgs.append(img)
                 self.labels.append(label_int)
@@ -62,11 +69,14 @@ class UBCDataset_augsOnly(Dataset):
                     augs_imgs_file = os.path.join(self.augs_imgs_path,
                                                   str(img_id) + "_thumbnail" + f"_trans{j + 1}" + f"_{i + 1}.png")
                     if os.path.isfile(augs_imgs_file):
-                        img = Image.open(augs_imgs_file).convert('RGB')
-                        img = img.resize(img_size)
+                        #img = Image.open(augs_imgs_file).convert('RGB')
+                        #img = img.resize(img_size)
+                        img = cv2.imread(augs_imgs_file)
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        img = np.array(img)
                         label_int = label_str2int[f'{label}']
                         if self.transform:
-                            img = self.transform(img)
+                            img = self.transform(image=img)
 
                         self.imgs.append(img)
                         self.labels.append(label_int)
@@ -95,12 +105,15 @@ class UBCDataset(Dataset):
             label = row["label"]
             origin_imgs_file = os.path.join(self.origin_imgs_path, str(img_id) + '_thumbnail.png')
             if os.path.isfile(origin_imgs_file):
-                img = Image.open(origin_imgs_file).convert('RGB')
-                img = img.resize(img_size)
+                #img = Image.open(origin_imgs_file).convert('RGB')
+                #img = img.resize(img_size)
+                img = cv2.imread(origin_imgs_file)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                img = np.array(img)
                 label_int = label_str2int[f'{label}']
 
                 if self.transform:
-                    img = self.transform(img)
+                    img = self.transform(image=img)
 
                 self.imgs.append(img)
                 self.labels.append(label_int)
@@ -110,11 +123,14 @@ class UBCDataset(Dataset):
                     augs_imgs_file = os.path.join(self.augs_imgs_path,
                                                   str(img_id) + "_thumbnail" + f"_trans{j + 1}" + f"_{i + 1}.png")
                     if os.path.isfile(augs_imgs_file):
-                        img = Image.open(augs_imgs_file).convert('RGB')
+                        #img = Image.open(augs_imgs_file).convert('RGB')
+                        img = cv2.imread(augs_imgs_file)
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        img = np.array(img)
                         label_int = label_str2int[f'{label}']
 
                         if self.transform:
-                            img = self.transform(img)
+                            img = self.transform(image=img)
 
                         self.imgs.append(img)
                         self.labels.append(label_int)
@@ -237,7 +253,35 @@ def build_transform(config):
             ]
         )
 
-    return transform
+    data_transforms = A.Compose([
+            A.Resize(224, 224),
+            A.Flip(p=0.5),
+            A.VerticalFlip(p=0.5),
+            A.RandomRotate90(p=1.0),
+            A.ShiftScaleRotate(shift_limit=0.1,
+                               scale_limit=0.15,
+                               rotate_limit=60,
+                               p=0.5),
+            A.HueSaturationValue(
+                hue_shift_limit=0.2,
+                sat_shift_limit=0.2,
+                val_shift_limit=0.2,
+                p=0.5
+            ),
+            A.RandomBrightnessContrast(
+                brightness_limit=(-0.1, 0.1),
+                contrast_limit=(-0.1, 0.1),
+                p=0.5
+            ),
+            A.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225],
+                max_pixel_value=255.0,
+                p=1.0
+            ),
+            ToTensorV2()], p=1.)
+
+    return data_transforms
 
 
 
